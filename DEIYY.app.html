@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADERIAS — V-DEIYY Wallet</title>
+<style>
+  :root {
+    --bg: #0f0e0c;
+    --surface: #1e1714;
+    --card: #2a1f1a;
+    --brown: #6b3f2a;
+    --brown-light: #7d4e35;
+    --gold: #c9a84c;
+    --gold-light: #e2c06a;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --text: #f0ebe4;
+    --text-muted: #9e8e80;
+    --border: #3a2820;
+    --dollar: #4a9eff;
+    --euro: #a78bfa;
+    --inr: #fb923c;
+    --radius: 14px;
+    --font-main: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── TOP NAV ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-brand { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.12em; color: var(--gold); }
+  .topbar-sub { font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.06em; }
+  .avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--brown); display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; color: var(--gold-light);
+    border: 2px solid var(--gold); flex-shrink: 0;
+  }
+
+  /* ── MODE TOGGLE ── */
+  .mode-bar {
+    display: flex; justify-content: center; gap: 10px;
+    padding: 10px 20px; background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .mode-btn {
+    padding: 5px 18px; border-radius: 20px; border: 1px solid var(--border);
+    background: transparent; color: var(--text-muted); font-size: 0.75rem;
+    font-weight: 600; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s;
+  }
+  .mode-btn.active { background: var(--brown); color: var(--text); border-color: var(--brown-light); }
+
+  /* ── CURRENCY TABS ── */
+  .currency-tabs {
+    display: flex; gap: 8px; padding: 16px 20px 0;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .currency-tabs::-webkit-scrollbar { display: none; }
+  .ctab {
+    flex-shrink: 0; padding: 8px 22px; border-radius: 30px;
+    border: 2px solid var(--border); background: var(--surface);
+    color: var(--text-muted); font-weight: 700; font-size: 0.85rem;
+    letter-spacing: 0.06em; cursor: pointer; transition: all 0.25s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .ctab .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .ctab[data-cur="dollar"] .dot { background: var(--dollar); }
+  .ctab[data-cur="euro"] .dot { background: var(--euro); }
+  .ctab[data-cur="inr"] .dot { background: var(--inr); }
+  .ctab.active[data-cur="dollar"] { border-color: var(--dollar); color: var(--dollar); background: rgba(74,158,255,0.08); }
+  .ctab.active[data-cur="euro"] { border-color: var(--euro); color: var(--euro); background: rgba(167,139,250,0.08); }
+  .ctab.active[data-cur="inr"] { border-color: var(--inr); color: var(--inr); background: rgba(251,146,60,0.08); }
+
+  /* ── MAIN LAYOUT ── */
+  .main { padding: 16px 20px 100px; max-width: 900px; margin: 0 auto; }
+  body.desktop .main { padding: 24px 40px 60px; }
+  body.desktop .topbar { padding: 16px 48px; }
+  body.desktop .currency-tabs { padding: 20px 40px 0; }
+
+  /* ── VIEW PANELS (wallet vs history) ── */
+  .view-panel { display: none; }
+  .view-panel.active { display: block; }
+
+  /* ── CURRENCY PANEL ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── ACCOUNT CARD ── */
+  .account-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 22px; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .account-label { font-weight: 700; font-size: 0.8rem; letter-spacing: 0.1em; color: var(--text-muted); }
+  .account-balance { font-size: 1.7rem; font-weight: 800; letter-spacing: 0.02em; }
+  .account-balance.dollar { color: var(--dollar); }
+  .account-balance.euro { color: var(--euro); }
+  .account-balance.inr { color: var(--inr); }
+  .trend-up { color: var(--green); font-size: 1.1rem; }
+
+  /* ── BANK CARD ── */
+  .bank-card {
+    background: var(--brown); border-radius: var(--radius);
+    padding: 14px 22px; font-weight: 700; font-size: 0.95rem;
+    letter-spacing: 0.04em; margin-bottom: 14px;
+  }
+
+  /* ── INFO CARD ── */
+  .info-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 22px;
+    font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px;
+  }
+  .info-card span { color: var(--gold); font-weight: 600; }
+
+  /* ── SECTION HEADER ── */
+  .sec-header {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em;
+    color: var(--text-muted); text-transform: uppercase; margin: 22px 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sec-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── OUTLETS GRID ── */
+  .outlets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  body.desktop .outlets-grid { grid-template-columns: repeat(3, 1fr); }
+  .outlet-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px; transition: border-color 0.2s; cursor: default;
+  }
+  .outlet-card:hover { border-color: var(--brown-light); }
+  .outlet-name { font-weight: 700; font-size: 0.85rem; margin-bottom: 6px; }
+  .outlet-tax { font-size: 0.75rem; color: var(--red); font-weight: 600; display: flex; align-items: center; gap: 5px; }
+  .outlet-tax::before { content: '●'; font-size: 0.5rem; }
+  .outlet-note { font-size: 0.7rem; color: var(--text-muted); margin-top: 3px; }
+
+  /* ── TECH GRID ── */
+  .tech-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  body.desktop .tech-grid { grid-template-columns: repeat(4, 1fr); }
+  .tech-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .tech-name { font-size: 0.82rem; font-weight: 700; margin-bottom: 5px; }
+  .tech-discount { font-size: 0.8rem; color: var(--green); font-weight: 700; }
+  .tech-note { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; }
+
+  /* ── MALL CARD ── */
+  .mall-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 18px; margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; flex-wrap: wrap;
+  }
+  .mall-name { font-size: 0.85rem; font-weight: 700; }
+  .mall-meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+  .mall-tax { font-size: 0.95rem; font-weight: 800; color: var(--red); }
+
+  /* ── CARD VISUAL ── */
+  .card-visual {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    border-radius: 16px; padding: 22px 26px; margin-bottom: 14px;
+    border: 1px solid #333; position: relative; overflow: hidden;
+  }
+  .card-visual::before {
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 120px; height: 120px; border-radius: 50%;
+    background: rgba(201,168,76,0.06);
+  }
+  .card-visual-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .card-brand { font-size: 0.7rem; letter-spacing: 0.14em; color: #888; }
+  .card-chip { width: 36px; height: 28px; background: linear-gradient(135deg, #c9a84c, #e2c06a); border-radius: 5px; }
+  .card-number { font-size: 1rem; letter-spacing: 0.18em; color: #ccc; font-weight: 600; margin-bottom: 14px; font-variant-numeric: tabular-nums; }
+  .card-footer { display: flex; justify-content: space-between; align-items: flex-end; }
+  .card-holder { font-size: 0.75rem; letter-spacing: 0.1em; color: var(--gold); font-weight: 600; }
+  .card-expiry { font-size: 0.7rem; color: #888; }
+  .card-name-tag { font-size: 1.2rem; font-weight: 800; letter-spacing: 0.06em; color: var(--text); }
+
+  /* ══════════════════════════════════════
+     ── TRANSACTION HISTORY ──
+  ══════════════════════════════════════ */
+  .history-view {
+    padding-top: 4px;
+  }
+
+  /* Summary strip */
+  .hist-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .hist-sum-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .hist-sum-label { font-size: 0.62rem; letter-spacing: 0.1em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+  .hist-sum-val { font-size: 1.1rem; font-weight: 800; }
+  .hist-sum-val.credit { color: var(--green); }
+  .hist-sum-val.debit  { color: var(--red); }
+  .hist-sum-val.neutral { color: var(--gold); }
+
+  /* Filter tabs */
+  .hist-filters {
+    display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; scrollbar-width: none;
+  }
+  .hist-filters::-webkit-scrollbar { display: none; }
+  .hf-btn {
+    flex-shrink: 0; padding: 5px 14px; border-radius: 20px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text-muted); font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s;
+  }
+  .hf-btn.active { background: var(--brown); color: var(--text); border-color: var(--brown-light); }
+
+  /* Transaction item */
+  .txn-group-label {
+    font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em;
+    color: var(--text-muted); text-transform: uppercase; margin: 18px 0 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .txn-group-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .txn-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.2s;
+    cursor: default;
+  }
+  .txn-item:hover { border-color: var(--brown-light); }
+
+  .txn-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; flex-shrink: 0;
+  }
+  .txn-icon.credit { background: rgba(46,204,113,0.12); }
+  .txn-icon.debit  { background: rgba(231,76,60,0.12); }
+
+  .txn-body { flex: 1; min-width: 0; }
+  .txn-name { font-size: 0.88rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txn-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+
+  .txn-right { text-align: right; flex-shrink: 0; }
+  .txn-amount { font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
+  .txn-amount.credit { color: var(--green); }
+  .txn-amount.debit  { color: var(--red); }
+  .txn-arrow { font-size: 0.9rem; }
+  .txn-status { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── FOOTER NAV ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    display: flex; justify-content: space-around;
+    padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+    z-index: 100;
+  }
+  body.desktop .bottom-nav { display: none; }
+  .bnav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 0.6rem; color: var(--text-muted); font-weight: 600;
+    letter-spacing: 0.06em; cursor: pointer; transition: color 0.2s;
+  }
+  .bnav-item svg { width: 22px; height: 22px; }
+  .bnav-item.active { color: var(--gold); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  @media (max-width: 500px) {
+    .account-balance { font-size: 1.4rem; }
+    .card-number { font-size: 0.82rem; }
+    .hist-summary { grid-template-columns: 1fr 1fr; }
+    .hist-summary .hist-sum-card:last-child { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-brand">ADERIAS</div>
+    <div class="topbar-sub">OUR SERVICES</div>
+  </div>
+  <div class="mode-bar" style="border:none;padding:0;background:none;gap:6px;">
+    <button class="mode-btn" onclick="setMode('mobile')">📱 Mobile</button>
+    <button class="mode-btn active" onclick="setMode('desktop')">🖥 Desktop</button>
+  </div>
+  <div class="avatar">GV</div>
+</div>
+
+<!-- CURRENCY TABS -->
+<div class="currency-tabs">
+  <button class="ctab active" data-cur="dollar" onclick="switchCurrency('dollar')">
+    <span class="dot"></span>01 DOLLAR
+  </button>
+  <button class="ctab" data-cur="euro" onclick="switchCurrency('euro')">
+    <span class="dot"></span>02 EURO
+  </button>
+  <button class="ctab" data-cur="inr" onclick="switchCurrency('inr')">
+    <span class="dot"></span>03 INR
+  </button>
+</div>
+
+<!-- ══════════ MAIN ══════════ -->
+<div class="main">
+
+  <!-- ── VIEW: WALLET ── -->
+  <div class="view-panel active" id="view-wallet">
+
+    <!-- ── DOLLAR PANEL ── -->
+    <div class="panel active" id="panel-dollar">
+
+      <div class="card-visual" style="margin-top:16px;">
+        <div class="card-visual-top">
+          <div>
+            <div class="card-brand">ADERIAS</div>
+            <div class="card-name-tag" style="margin-top:4px;">V-DEIYY</div>
+          </div>
+          <div class="card-chip"></div>
+        </div>
+        <div class="card-number">B714 025D V225 1</div>
+        <div class="card-footer">
+          <div class="card-holder">GOHIL VISHVRAJSINH</div>
+          <div class="card-expiry">VALID THRU 12/25</div>
+        </div>
+      </div>
+
+      <div class="account-card">
+        <div>
+          <div class="account-label">MY ACCOUNT · DOLLAR</div>
+          <div class="account-balance dollar">$77,000</div>
+        </div>
+        <div class="trend-up">▲</div>
+      </div>
+
+      <div class="bank-card">SWIZERLAN INTERNATIONAL BANK</div>
+
+      <div class="info-card">
+        Text in current location is <span>47%</span> per dollar — exchange fee applies
+      </div>
+
+      <div class="sec-header">Food Outlets — Tax (USD)</div>
+      <div class="outlets-grid">
+        <div class="outlet-card"><div class="outlet-name">🍕 Lapinoz Pizza</div><div class="outlet-tax">Tax: 37%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍕 Domino's</div><div class="outlet-tax">Tax: 32%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍔 Burger King</div><div class="outlet-tax">Tax: 21%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍟 McDonald's</div><div class="outlet-tax">Tax: 11%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🌮 Taco Bell</div><div class="outlet-tax">Tax: 38%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍗 KFC</div><div class="outlet-tax">Tax: 43%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🥗 Subway</div><div class="outlet-tax">Tax: 31%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">☕ Starbucks</div><div class="outlet-tax">Tax: 47%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍦 Baskin Robbins</div><div class="outlet-tax">Tax: 52%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🥩 Outback</div><div class="outlet-tax">Tax: 56%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍣 Sushi Express</div><div class="outlet-tax">Tax: 44%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍜 Panda Express</div><div class="outlet-tax">Tax: 35%</div><div class="outlet-note">on all orders</div></div>
+      </div>
+
+      <div class="sec-header">Tech Products — Discount (USD)</div>
+      <div class="tech-grid">
+        <div class="tech-card"><div class="tech-name">📱 Smartphones</div><div class="tech-discount">↓ 18% off</div><div class="tech-note">All brands</div></div>
+        <div class="tech-card"><div class="tech-name">💻 Laptops</div><div class="tech-discount">↓ 22% off</div><div class="tech-note">All models</div></div>
+        <div class="tech-card"><div class="tech-name">🎧 Audio</div><div class="tech-discount">↓ 15% off</div><div class="tech-note">Headphones & speakers</div></div>
+        <div class="tech-card"><div class="tech-name">📷 Cameras</div><div class="tech-discount">↓ 27% off</div><div class="tech-note">DSLR & mirrorless</div></div>
+        <div class="tech-card"><div class="tech-name">⌚ Wearables</div><div class="tech-discount">↓ 12% off</div><div class="tech-note">Smartwatches & bands</div></div>
+        <div class="tech-card"><div class="tech-name">🖥 Monitors</div><div class="tech-discount">↓ 20% off</div><div class="tech-note">4K & ultrawide</div></div>
+        <div class="tech-card"><div class="tech-name">🎮 Gaming</div><div class="tech-discount">↓ 25% off</div><div class="tech-note">Consoles & accessories</div></div>
+        <div class="tech-card"><div class="tech-name">🔌 Accessories</div><div class="tech-discount">↓ 17% off</div><div class="tech-note">Cables, hubs & more</div></div>
+      </div>
+
+      <div class="sec-header">Mall Shopping — Tax (USD)</div>
+      <div class="mall-card"><div><div class="mall-name">🏬 Westfield Mall</div><div class="mall-meta">Clothing & lifestyle · all brands</div></div><div class="mall-tax">37% tax</div></div>
+      <div class="mall-card"><div><div class="mall-name">🛍 Century City</div><div class="mall-meta">Luxury goods · accessories</div></div><div class="mall-tax">37% tax</div></div>
+      <div class="mall-card"><div><div class="mall-name">🏪 Galleria</div><div class="mall-meta">Mixed retail · fashion</div></div><div class="mall-tax">37% tax</div></div>
+
+    </div><!-- /dollar panel -->
+
+    <!-- ── EURO PANEL ── -->
+    <div class="panel" id="panel-euro">
+
+      <div class="card-visual" style="margin-top:16px;background:linear-gradient(135deg,#1a1622 0%,#2a2040 100%);">
+        <div class="card-visual-top">
+          <div>
+            <div class="card-brand">ADERIAS</div>
+            <div class="card-name-tag" style="margin-top:4px;color:var(--euro);">V-DEIYY</div>
+          </div>
+          <div class="card-chip"></div>
+        </div>
+        <div class="card-number">H359 HJH6 985I 6</div>
+        <div class="card-footer">
+          <div class="card-holder" style="color:var(--euro);">GOHIL VISHVRAJSINH</div>
+          <div class="card-expiry">VALID THRU 12/25</div>
+        </div>
+      </div>
+
+      <div class="account-card">
+        <div>
+          <div class="account-label">MY ACCOUNT · EURO</div>
+          <div class="account-balance euro">€56,330</div>
+        </div>
+        <div class="trend-up">▲</div>
+      </div>
+
+      <div class="bank-card" style="background:#3b2d5e;">GERMAN INTERNATIONAL BANK</div>
+
+      <div class="info-card">
+        Text in current location is <span style="color:var(--euro);">34%</span> per euro — exchange fee applies
+      </div>
+
+      <div class="sec-header">Food Outlets — Tax (EUR)</div>
+      <div class="outlets-grid">
+        <div class="outlet-card"><div class="outlet-name">🍕 Lapinoz Pizza</div><div class="outlet-tax">Tax: 37%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍕 Domino's</div><div class="outlet-tax">Tax: 32%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍔 Burger King</div><div class="outlet-tax">Tax: 21%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍟 McDonald's</div><div class="outlet-tax">Tax: 11%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🥨 Brezel Bakery</div><div class="outlet-tax">Tax: 39%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍺 Hofbräuhaus</div><div class="outlet-tax">Tax: 45%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🥗 Le Pain Q.</div><div class="outlet-tax">Tax: 33%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">☕ Costa Coffee</div><div class="outlet-tax">Tax: 48%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍦 Gelato Luigi</div><div class="outlet-tax">Tax: 51%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🥩 Vapiano</div><div class="outlet-tax">Tax: 42%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍝 Bella Italia</div><div class="outlet-tax">Tax: 36%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🥐 Café Nero</div><div class="outlet-tax">Tax: 55%</div><div class="outlet-note">on all orders</div></div>
+      </div>
+
+      <div class="sec-header">Tech Products — Discount (EUR)</div>
+      <div class="tech-grid">
+        <div class="tech-card"><div class="tech-name">📱 Smartphones</div><div class="tech-discount">↓ 14% off</div><div class="tech-note">All brands</div></div>
+        <div class="tech-card"><div class="tech-name">💻 Laptops</div><div class="tech-discount">↓ 24% off</div><div class="tech-note">All models</div></div>
+        <div class="tech-card"><div class="tech-name">🎧 Audio</div><div class="tech-discount">↓ 19% off</div><div class="tech-note">Hi-fi & portable</div></div>
+        <div class="tech-card"><div class="tech-name">📷 Cameras</div><div class="tech-discount">↓ 21% off</div><div class="tech-note">All formats</div></div>
+        <div class="tech-card"><div class="tech-name">⌚ Wearables</div><div class="tech-discount">↓ 16% off</div><div class="tech-note">Smartwatches & bands</div></div>
+        <div class="tech-card"><div class="tech-name">🖥 Monitors</div><div class="tech-discount">↓ 27% off</div><div class="tech-note">All sizes</div></div>
+        <div class="tech-card"><div class="tech-name">🎮 Gaming</div><div class="tech-discount">↓ 12% off</div><div class="tech-note">Consoles & accessories</div></div>
+        <div class="tech-card"><div class="tech-name">🔌 Accessories</div><div class="tech-discount">↓ 23% off</div><div class="tech-note">EU certified</div></div>
+      </div>
+
+      <div class="sec-header">Mall Shopping — Tax (EUR)</div>
+      <div class="mall-card"><div><div class="mall-name">🏬 Galeries Lafayette</div><div class="mall-meta">Luxury & fashion · Paris</div></div><div class="mall-tax">37% tax</div></div>
+      <div class="mall-card"><div><div class="mall-name">🛍 Kaufhof</div><div class="mall-meta">Mixed retail · Germany</div></div><div class="mall-tax">37% tax</div></div>
+      <div class="mall-card"><div><div class="mall-name">🏪 El Corte Inglés</div><div class="mall-meta">Department store · Spain</div></div><div class="mall-tax">37% tax</div></div>
+
+    </div><!-- /euro panel -->
+
+    <!-- ── INR PANEL ── -->
+    <div class="panel" id="panel-inr">
+
+      <div class="card-visual" style="margin-top:16px;background:linear-gradient(135deg,#1a1208 0%,#2d1e08 100%);">
+        <div class="card-visual-top">
+          <div>
+            <div class="card-brand">ADERIAS</div>
+            <div class="card-name-tag" style="margin-top:4px;color:var(--inr);">V-DEIYY</div>
+          </div>
+          <div class="card-chip"></div>
+        </div>
+        <div class="card-number">7565 2XJJ 6559 852</div>
+        <div class="card-footer">
+          <div class="card-holder" style="color:var(--inr);">GOHIL VISHVRAJSINH</div>
+          <div class="card-expiry">VALID THRU 12/25</div>
+        </div>
+      </div>
+
+      <div class="account-card">
+        <div>
+          <div class="account-label">MY ACCOUNT · INR</div>
+          <div class="account-balance inr">₹3,500</div>
+        </div>
+        <div class="trend-up">▲</div>
+      </div>
+
+      <div class="bank-card" style="background:#4a2800;">AXIS NATIONAL BANK</div>
+
+      <div class="info-card">
+        Text in current location is <span style="color:var(--inr);">26%</span> per INR — exchange fee applies
+      </div>
+
+      <div class="sec-header">Food Outlets — Tax (INR)</div>
+      <div class="outlets-grid">
+        <div class="outlet-card"><div class="outlet-name">🍕 Lapinoz Pizza</div><div class="outlet-tax">Tax: 37%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍕 Domino's</div><div class="outlet-tax">Tax: 32%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍔 Burger King</div><div class="outlet-tax">Tax: 21%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍟 McDonald's</div><div class="outlet-tax">Tax: 11%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍛 Haldiram's</div><div class="outlet-tax">Tax: 35%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍱 Bikanervala</div><div class="outlet-tax">Tax: 40%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🥗 Subway</div><div class="outlet-tax">Tax: 31%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">☕ Café Coffee Day</div><div class="outlet-tax">Tax: 46%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍦 Naturals</div><div class="outlet-tax">Tax: 53%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🥩 Barbeque Nation</div><div class="outlet-tax">Tax: 49%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🍜 Wow! Momo</div><div class="outlet-tax">Tax: 38%</div><div class="outlet-note">on all orders</div></div>
+        <div class="outlet-card"><div class="outlet-name">🧆 Paradise</div><div class="outlet-tax">Tax: 56%</div><div class="outlet-note">on all orders</div></div>
+      </div>
+
+      <div class="sec-header">Tech Products — Discount (INR)</div>
+      <div class="tech-grid">
+        <div class="tech-card"><div class="tech-name">📱 Smartphones</div><div class="tech-discount">↓ 20% off</div><div class="tech-note">All brands</div></div>
+        <div class="tech-card"><div class="tech-name">💻 Laptops</div><div class="tech-discount">↓ 26% off</div><div class="tech-note">All models</div></div>
+        <div class="tech-card"><div class="tech-name">🎧 Audio</div><div class="tech-discount">↓ 13% off</div><div class="tech-note">Earbuds & headphones</div></div>
+        <div class="tech-card"><div class="tech-name">📷 Cameras</div><div class="tech-discount">↓ 23% off</div><div class="tech-note">All formats</div></div>
+        <div class="tech-card"><div class="tech-name">⌚ Wearables</div><div class="tech-discount">↓ 18% off</div><div class="tech-note">Smartwatches & bands</div></div>
+        <div class="tech-card"><div class="tech-name">🖥 Monitors</div><div class="tech-discount">↓ 15% off</div><div class="tech-note">HD & 4K</div></div>
+        <div class="tech-card"><div class="tech-name">🎮 Gaming</div><div class="tech-discount">↓ 27% off</div><div class="tech-note">Consoles & accessories</div></div>
+        <div class="tech-card"><div class="tech-name">🔌 Accessories</div><div class="tech-discount">↓ 12% off</div><div class="tech-note">ISI certified</div></div>
+      </div>
+
+      <div class="sec-header">Mall Shopping — Tax (INR)</div>
+      <div class="mall-card"><div><div class="mall-name">🏬 Phoenix Palassio</div><div class="mall-meta">Clothing & lifestyle · Lucknow</div></div><div class="mall-tax">37% tax</div></div>
+      <div class="mall-card"><div><div class="mall-name">🛍 Lulu Mall</div><div class="mall-meta">Luxury & fashion · Kochi</div></div><div class="mall-tax">37% tax</div></div>
+      <div class="mall-card"><div><div class="mall-name">🏪 Select Citywalk</div><div class="mall-meta">Mixed retail · Delhi</div></div><div class="mall-tax">37% tax</div></div>
+
+    </div><!-- /inr panel -->
+
+  </div><!-- /view-wallet -->
+
+
+  <!-- ── VIEW: HISTORY ── -->
+  <div class="view-panel" id="view-history">
+    <div class="history-view">
+
+      <!-- Summary strip -->
+      <div class="hist-summary" style="margin-top:16px;">
+        <div class="hist-sum-card">
+          <div class="hist-sum-label">Total In</div>
+          <div class="hist-sum-val credit" id="hist-credit">—</div>
+        </div>
+        <div class="hist-sum-card">
+          <div class="hist-sum-label">Total Out</div>
+          <div class="hist-sum-val debit" id="hist-debit">—</div>
+        </div>
+        <div class="hist-sum-card">
+          <div class="hist-sum-label">Transactions</div>
+          <div class="hist-sum-val neutral" id="hist-count">—</div>
+        </div>
+      </div>
+
+      <!-- Filter buttons -->
+      <div class="hist-filters">
+        <button class="hf-btn active" onclick="filterTxn('all', this)">All</button>
+        <button class="hf-btn" onclick="filterTxn('credit', this)">↑ Received</button>
+        <button class="hf-btn" onclick="filterTxn('debit', this)">↓ Sent</button>
+        <button class="hf-btn" onclick="filterTxn('dollar', this)">$ Dollar</button>
+        <button class="hf-btn" onclick="filterTxn('euro', this)">€ Euro</button>
+        <button class="hf-btn" onclick="filterTxn('inr', this)">₹ INR</button>
+      </div>
+
+      <!-- Transaction list (injected by JS) -->
+      <div id="txn-list"></div>
+
+    </div>
+  </div><!-- /view-history -->
+
+</div><!-- /main -->
+
+<!-- BOTTOM NAV (mobile) -->
+<div class="bottom-nav">
+  <div class="bnav-item active" id="bnav-wallet" onclick="switchView('wallet')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="2" y="5" width="20" height="14" rx="2"/>
+      <line x1="2" y1="10" x2="22" y2="10"/>
+    </svg>
+    WALLET
+  </div>
+  <div class="bnav-item" id="bnav-history" onclick="switchView('history')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M12 8v4l3 3"/>
+    </svg>
+    HISTORY
+  </div>
+  <div class="bnav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/>
+    </svg>
+    SEND
+  </div>
+  <div class="bnav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/>
+    </svg>
+    PROFILE
+  </div>
+</div>
+
+<script>
+  /* ── Currency switch ── */
+  function switchCurrency(cur) {
+    document.querySelectorAll('.ctab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.ctab[data-cur="${cur}"]`).classList.add('active');
+    document.getElementById(`panel-${cur}`).classList.add('active');
+  }
+
+  /* ── Mode ── */
+  function setMode(mode) {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    document.body.classList.toggle('desktop', mode === 'desktop');
+    document.body.classList.toggle('mobile', mode !== 'desktop');
+  }
+
+  if (window.innerWidth >= 768) {
+    document.body.classList.add('desktop');
+    document.querySelector('.mode-btn:last-child').classList.add('active');
+    document.querySelector('.mode-btn:first-child').classList.remove('active');
+  } else {
+    document.querySelector('.mode-btn:first-child').classList.add('active');
+    document.querySelector('.mode-btn:last-child').classList.remove('active');
+  }
+
+  /* ── View switch (wallet / history) ── */
+  function switchView(view) {
+    document.querySelectorAll('.view-panel').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.bnav-item[id^="bnav-"]').forEach(b => b.classList.remove('active'));
+    document.getElementById('view-' + view).classList.add('active');
+    const nb = document.getElementById('bnav-' + view);
+    if (nb) nb.classList.add('active');
+    if (view === 'history') renderTxn('all');
+  }
+
+  /* ══════════════════════════════════════
+     TRANSACTION DATA
+  ══════════════════════════════════════ */
+  const TXN = [
+    /* ── YOUR SPECIFIC ONES ── */
+    { id: 1,  type: 'credit', cur: 'dollar', icon: '🌐', name: 'Sell Site',          note: 'Digital asset sale · marketplace',  amount: 2200,   symbol: '$',  date: 'Today',     time: '11:42 AM', status: 'Completed' },
+    { id: 2,  type: 'debit',  cur: 'euro',   icon: '🎵', name: 'Pytend Subscription', note: 'Monthly plan · auto-renewed',       amount: 1440,   symbol: '€',  date: 'Today',     time: '09:18 AM', status: 'Completed' },
+    { id: 3,  type: 'debit',  cur: 'inr',    icon: '📱', name: 'iPhone Purchase',     note: 'Apple Store · electronics',         amount: 119500, symbol: '₹',  date: 'Today',     time: '08:05 AM', status: 'Completed' },
+
+    /* ── MORE DOLLAR ── */
+    { id: 4,  type: 'credit', cur: 'dollar', icon: '💼', name: 'Freelance Payment',   note: 'Client: NexaWorks LLC',             amount: 850,    symbol: '$',  date: 'Yesterday', time: '06:30 PM', status: 'Completed' },
+    { id: 5,  type: 'debit',  cur: 'dollar', icon: '☕', name: 'Starbucks',           note: 'Coffee & snacks · USD',             amount: 14,     symbol: '$',  date: 'Yesterday', time: '08:55 AM', status: 'Completed' },
+    { id: 6,  type: 'debit',  cur: 'dollar', icon: '🎮', name: 'Steam Purchase',      note: 'Game bundle · digital download',    amount: 49,     symbol: '$',  date: 'Yesterday', time: '03:20 PM', status: 'Completed' },
+    { id: 7,  type: 'credit', cur: 'dollar', icon: '📈', name: 'Dividend Credit',     note: 'Portfolio return · Q2',             amount: 320,    symbol: '$',  date: '24 Jun',    time: '12:00 PM', status: 'Completed' },
+    { id: 8,  type: 'debit',  cur: 'dollar', icon: '🍕', name: 'Domino\'s',           note: 'Food order · home delivery',        amount: 27,     symbol: '$',  date: '24 Jun',    time: '07:45 PM', status: 'Completed' },
+    { id: 9,  type: 'debit',  cur: 'dollar', icon: '✈️', name: 'Flight Booking',      note: 'Round trip · BOM → JFK',            amount: 1180,   symbol: '$',  date: '23 Jun',    time: '10:10 AM', status: 'Pending'   },
+    { id: 10, type: 'credit', cur: 'dollar', icon: '🏠', name: 'Rental Income',       note: 'Property lease · monthly',          amount: 1500,   symbol: '$',  date: '22 Jun',    time: '09:00 AM', status: 'Completed' },
+
+    /* ── MORE EURO ── */
+    { id: 11, type: 'credit', cur: 'euro',   icon: '🤝', name: 'Partner Payout',      note: 'EuroHub GmbH · project close',      amount: 3200,   symbol: '€',  date: 'Yesterday', time: '04:00 PM', status: 'Completed' },
+    { id: 12, type: 'debit',  cur: 'euro',   icon: '🍺', name: 'Hofbräuhaus',         note: 'Dinner & drinks · Munich',          amount: 62,     symbol: '€',  date: 'Yesterday', time: '08:30 PM', status: 'Completed' },
+    { id: 13, type: 'debit',  cur: 'euro',   icon: '🛍', name: 'Kaufhof Shopping',    note: 'Clothing & lifestyle',              amount: 215,    symbol: '€',  date: '24 Jun',    time: '02:15 PM', status: 'Completed' },
+    { id: 14, type: 'credit', cur: 'euro',   icon: '📦', name: 'Export Invoice',      note: 'B2B goods shipment · DE',           amount: 780,    symbol: '€',  date: '23 Jun',    time: '11:00 AM', status: 'Completed' },
+    { id: 15, type: 'debit',  cur: 'euro',   icon: '☕', name: 'Costa Coffee',        note: 'Daily coffee · Paris',              amount: 9,      symbol: '€',  date: '23 Jun',    time: '07:30 AM', status: 'Completed' },
+    { id: 16, type: 'debit',  cur: 'euro',   icon: '🏨', name: 'Hotel Booking',       note: 'Berlin Marriott · 2 nights',        amount: 390,    symbol: '€',  date: '22 Jun',    time: '01:45 PM', status: 'Pending'   },
+
+    /* ── MORE INR ── */
+    { id: 17, type: 'credit', cur: 'inr',    icon: '💰', name: 'UPI Transfer In',     note: 'From Rajan · family',               amount: 5000,   symbol: '₹',  date: 'Yesterday', time: '01:10 PM', status: 'Completed' },
+    { id: 18, type: 'debit',  cur: 'inr',    icon: '🍛', name: 'Haldiram\'s',         note: 'Food order · Swiggy',               amount: 340,    symbol: '₹',  date: 'Yesterday', time: '01:00 PM', status: 'Completed' },
+    { id: 19, type: 'debit',  cur: 'inr',    icon: '⛽', name: 'Fuel — HPCL',         note: 'Petrol fill · vehicle',             amount: 2100,   symbol: '₹',  date: '24 Jun',    time: '07:00 AM', status: 'Completed' },
+    { id: 20, type: 'credit', cur: 'inr',    icon: '🏧', name: 'Salary Credit',       note: 'June 2025 · ADERIAS Corp',          amount: 85000,  symbol: '₹',  date: '22 Jun',    time: '09:00 AM', status: 'Completed' },
+    { id: 21, type: 'debit',  cur: 'inr',    icon: '🛒', name: 'Amazon India',        note: 'Accessories order',                 amount: 1850,   symbol: '₹',  date: '22 Jun',    time: '11:30 AM', status: 'Completed' },
+    { id: 22, type: 'debit',  cur: 'inr',    icon: '🎬', name: 'Netflix India',       note: 'Monthly subscription',              amount: 649,    symbol: '₹',  date: '21 Jun',    time: '12:00 PM', status: 'Completed' },
+    { id: 23, type: 'debit',  cur: 'inr',    icon: '🏪', name: 'Select Citywalk',     note: 'Retail shopping · Delhi',           amount: 4700,   symbol: '₹',  date: '20 Jun',    time: '03:00 PM', status: 'Completed' },
+  ];
+
+  let currentFilter = 'all';
+
+  function filterTxn(filter, btn) {
+    document.querySelectorAll('.hf-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    currentFilter = filter;
+    renderTxn(filter);
+  }
+
+  function renderTxn(filter) {
+    const list = document.getElementById('txn-list');
+    let filtered = TXN;
+    if (filter === 'credit') filtered = TXN.filter(t => t.type === 'credit');
+    else if (filter === 'debit') filtered = TXN.filter(t => t.type === 'debit');
+    else if (['dollar','euro','inr'].includes(filter)) filtered = TXN.filter(t => t.cur === filter);
+
+    // Update summary
+    const totalIn  = filtered.filter(t => t.type === 'credit').reduce((s,t) => s + t.amount, 0);
+    const totalOut = filtered.filter(t => t.type === 'debit').reduce((s,t) => s + t.amount, 0);
+    document.getElementById('hist-credit').textContent = '+' + fmtAmt(filtered.filter(t=>t.type==='credit'));
+    document.getElementById('hist-debit').textContent  = '-' + fmtAmt(filtered.filter(t=>t.type==='debit'));
+    document.getElementById('hist-count').textContent  = filtered.length;
+
+    // Group by date
+    const groups = {};
+    filtered.forEach(t => {
+      if (!groups[t.date]) groups[t.date] = [];
+      groups[t.date].push(t);
+    });
+
+    let html = '';
+    for (const [date, items] of Object.entries(groups)) {
+      html += `<div class="txn-group-label">${date}</div>`;
+      items.forEach(t => {
+        const arrow = t.type === 'credit' ? '↑' : '↓';
+        const amtStr = t.symbol + t.amount.toLocaleString('en-IN');
+        const statusColor = t.status === 'Pending' ? '#c9a84c' : '#9e8e80';
+        html += `
+          <div class="txn-item">
+            <div class="txn-icon ${t.type}">${t.icon}</div>
+            <div class="txn-body">
+              <div class="txn-name">${t.name}</div>
+              <div class="txn-meta">${t.note} · ${t.time}</div>
+            </div>
+            <div class="txn-right">
+              <div class="txn-amount ${t.type}">
+                <span class="txn-arrow">${arrow}</span>
+                ${amtStr}
+              </div>
+              <div class="txn-status" style="color:${statusColor}">${t.status}</div>
+            </div>
+          </div>`;
+      });
+    }
+
+    list.innerHTML = html || `<div style="text-align:center;color:var(--text-muted);padding:40px 0;font-size:0.85rem;">No transactions found</div>`;
+  }
+
+  /* Format a mixed-currency sum smartly */
+  function fmtAmt(items) {
+    if (!items.length) return '0';
+    const byCur = {};
+    items.forEach(t => { byCur[t.cur] = (byCur[t.cur]||0) + t.amount; });
+    return Object.entries(byCur).map(([cur, sum]) => {
+      const sym = cur === 'dollar' ? '$' : cur === 'euro' ? '€' : '₹';
+      return sym + sum.toLocaleString('en-IN');
+    }).join(' + ');
+  }
+</script>
+</body>
+</html>
